@@ -8,8 +8,6 @@ namespace QodanaExample;
 
 public class JustRun(ILogger<JustRun> logger)
 {
-    private readonly ILogger<JustRun> _logger = logger;
-
     [Function("JustRun")]
     public IActionResult Run([HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequest req)
     {
@@ -17,12 +15,12 @@ public class JustRun(ILogger<JustRun> logger)
         var debug = bool.TryParse(req.Query["debug"], out var debugValue)
                  && debugValue;
 
-        if (debug)
+        if (debug && logger != null)
         {
-            _logger.LogInformation("[INIT] Call to JustRun.");
+            logger.LogInformation("[INIT] Call to JustRun.");
         }
 
-        return new OkObjectResult("Welcome to Azure Functions!");
+        return new OkObjectResult("OK");
     }
 
     [Function("CurrentTime")]
@@ -33,9 +31,9 @@ public class JustRun(ILogger<JustRun> logger)
         var debug = bool.TryParse(req.Query["debug"], out var debugValue)
                  && debugValue;
 
-        if (debug)
+        if (debug && logger != null)
         {
-            _logger.LogInformation("[INIT] Call to CurrentTime.");
+            logger.LogInformation("[INIT] Call to CurrentTime.");
         }
 
         return new OkObjectResult(DateTimeOffset.UtcNow);
