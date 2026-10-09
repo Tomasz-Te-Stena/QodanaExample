@@ -3,8 +3,18 @@
 ####################################################################################################################
 
 version: "1.0"
+
 linter: qodana-dotnet
+
 profile:
   name: qodana.recommended
+  inspections:
+    - inspection: VulnerableLibrariesLocal
+      enabled: true
+    - inspection: VulnerableApi
+      enabled: true
+    - inspection: RiderSecurityErrorsInspection
+      enabled: true
+
 include:
   - name: CheckDependencyLicenses
