@@ -3,28 +3,29 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
-namespace org.QodanaExample;
-
-public class JustRun
+namespace QodanaExample
 {
-    private readonly ILogger<JustRun> _logger;
-
-    public JustRun(ILogger<JustRun> logger)
+    public class JustRun
     {
-        _logger = logger;
-    }
+        private readonly ILogger<JustRun> _logger;
 
-    [Function("JustRun")]
-    public IActionResult Run([HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequest req)
-    {
-        _logger.LogInformation("C# HTTP trigger function processed a request.");
-        return new OkObjectResult("Welcome to Azure Functions!");
-    }
+        public JustRun(ILogger<JustRun> logger)
+        {
+            _logger = logger;
+        }
 
-    [Function("CurrentTime")]
-    public IActionResult CurrentTime(
-        [HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequest req)
-    {
-        return new OkObjectResult(DateTimeOffset.UtcNow);
+        [Function("JustRun")]
+        public IActionResult Run([HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequest req)
+        {
+            _logger.LogInformation("C# HTTP trigger function processed a request.");
+            return new OkObjectResult("Welcome to Azure Functions!");
+        }
+
+        [Function("CurrentTime")]
+        public IActionResult CurrentTime(
+            [HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequest req)
+        {
+            return new OkObjectResult(DateTimeOffset.UtcNow);
+        }
     }
 }
