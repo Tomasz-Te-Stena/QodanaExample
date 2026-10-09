@@ -18,7 +18,7 @@ public class JustRun
     public IActionResult Run([HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequest req)
     {
         // Log debug infomration
-        bool debug = bool.TryParse(req.Query["debug"], out var debugValue)
+        var debug = bool.TryParse(req.Query["debug"], out var debugValue)
                  && debugValue;
 
         if (debug)
@@ -34,7 +34,7 @@ public class JustRun
         [HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequest req)
     {
         // Log debug infomration
-        bool debug = bool.TryParse(req.Query["debug"], out var debugValue)
+        var debug = bool.TryParse(req.Query["debug"], out var debugValue)
                  && debugValue;
 
         if (debug)
