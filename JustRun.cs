@@ -18,15 +18,12 @@ public class JustRun
     public IActionResult Run([HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequest req)
     {
         // Log debug infomration
-        if (req != null && req.BodyReader != null)
-        {
-            bool debug = bool.TryParse(req.Query["debug"], out var debugValue)
+        bool debug = bool.TryParse(req.Query["debug"], out var debugValue)
                  && debugValue;
 
-            if (debug)
-            {
-                _logger.LogInformation("[INIT] Call to JustRun.");
-            }
+        if (debug)
+        {
+            _logger.LogInformation("[INIT] Call to JustRun.");
         }
 
         return new OkObjectResult("Welcome to Azure Functions!");
@@ -37,15 +34,12 @@ public class JustRun
         [HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequest req)
     {
         // Log debug infomration
-        if (req != null && req.BodyReader != null)
-        {
-            bool debug = bool.TryParse(req.Query["debug"], out var debugValue)
+        bool debug = bool.TryParse(req.Query["debug"], out var debugValue)
                  && debugValue;
 
-            if (debug)
-            {
-                _logger.LogInformation("[INIT] Call to CurrentTime.");
-            }
+        if (debug)
+        {
+            _logger.LogInformation("[INIT] Call to CurrentTime.");
         }
 
         return new OkObjectResult(DateTimeOffset.UtcNow);
