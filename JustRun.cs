@@ -56,4 +56,18 @@ public class JustRun(ILogger<JustRun> logger)
 
         return new OkObjectResult(content);
     }
+
+    [Function("WeakEncryption")]
+    public IActionResult WeakEncryption(
+        [HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequest req)
+    {
+        // INTENTIONALLY INSECURE - Qodana security demonstration
+        using var md5 = System.Security.Cryptography.MD5.Create();
+
+        var input = System.Text.Encoding.UTF8.GetBytes("SensitivePassword123");
+
+        var hash = md5.ComputeHash(input);
+
+        return new OkObjectResult(Convert.ToHexString(hash));
+    }
 }
