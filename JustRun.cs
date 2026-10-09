@@ -8,7 +8,7 @@ namespace QodanaExample;
 
 public class JustRun(ILogger<JustRun> logger)
 {
-    private ILogger<JustRun> _logger = logger;
+    private readonly ILogger<JustRun> _logger = logger;
 
     [Function("JustRun")]
     public IActionResult Run([HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequest req)
@@ -17,7 +17,7 @@ public class JustRun(ILogger<JustRun> logger)
         var debug = bool.TryParse(req.Query["debug"], out var debugValue)
                  && debugValue;
 
-        if (debug && logger != null)
+        if (debug)
         {
             _logger.LogInformation("[INIT] Call to JustRun.");
         }
@@ -33,7 +33,7 @@ public class JustRun(ILogger<JustRun> logger)
         var debug = bool.TryParse(req.Query["debug"], out var debugValue)
                  && debugValue;
 
-        if (debug && logger != null)
+        if (debug)
         {
             _logger.LogInformation("[INIT] Call to CurrentTime.");
         }
