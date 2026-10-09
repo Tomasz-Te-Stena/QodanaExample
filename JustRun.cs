@@ -3,16 +3,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
 
+
 namespace QodanaExample;
 
-public class JustRun
+public class JustRun(ILogger<JustRun> logger)
 {
-    private readonly ILogger<JustRun> _logger;
-
-    public JustRun(ILogger<JustRun> logger)
-    {
-        _logger = logger;
-    }
+    private readonly ILogger<JustRun> _logger = logger;
 
     [Function("JustRun")]
     public IActionResult Run([HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequest req)
