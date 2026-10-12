@@ -5,7 +5,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Diagnostics.CodeAnalysis;
 
-public class Program
+
+namespace QodanaExample;
+
+public static class Program
 {
     [ExcludeFromCodeCoverage]
     private static void Main(string[] args)
