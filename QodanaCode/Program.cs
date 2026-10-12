@@ -3,16 +3,35 @@ using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Azure.Functions.Worker.OpenTelemetry;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System.Diagnostics.CodeAnalysis;
 
-var builder = FunctionsApplication.CreateBuilder(args);
+Program.Main(args);
 
-builder.ConfigureFunctionsWebApplication();
-
-if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING")))
+public partial class Program
 {
-    builder.Services.AddOpenTelemetry()
-        .UseFunctionsWorkerDefaults()
-        .UseAzureMonitorExporter();
-}
+    [ExcludeFromCodeCoverage]
+    public static void Main(string[] args)
+    {
+        var builder = FunctionsApplication.CreateBuilder(args);
 
-builder.Build().Run();
+        builder.ConfigureFunctionsWebApplication();
+
+        ConfigureApplicationInsights(builder);
+
+        builder.Build().Run();
+    }
+
+    public static void ConfigureApplicationInsights(
+        FunctionsApplicationBuilder builder)
+    {
+        if (!string.IsNullOrEmpty(
+                Environment.GetEnvironmentVariable(
+                    "APPLICATIONINSIGHTS_CONNECTION_STRING")))
+        {
+            builder.Services
+                .AddOpenTelemetry()
+                .UseFunctionsWorkerDefaults()
+                .UseAzureMonitorExporter();
+        }
+    }
+}
