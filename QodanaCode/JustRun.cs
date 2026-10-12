@@ -60,6 +60,15 @@ public class JustRun(ILogger<JustRun> logger)
     public IActionResult WeakEncryption(
         [HttpTrigger(AuthorizationLevel.Function, "get")] HttpRequest req)
     {
+        // Log debug information
+        var debug = bool.TryParse(req.Query["debug"], out var debugValue)
+                    && debugValue;
+
+        if (debug)
+        {
+            _logger.LogInformation("[INIT] Call to WeakEncryption.");
+        }
+
         // INTENTIONALLY INSECURE - Qodana security demonstration
         using var md5 = System.Security.Cryptography.MD5.Create();
 
