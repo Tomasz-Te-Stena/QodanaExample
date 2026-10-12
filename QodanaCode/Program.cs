@@ -5,12 +5,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Diagnostics.CodeAnalysis;
 
-Main(args);
-
-public partial class Program
+public class Program
 {
     [ExcludeFromCodeCoverage]
-    public static void Main(string[] args)
+    private static void Main(string[] args)
     {
         var builder = FunctionsApplication.CreateBuilder(args);
 
