@@ -10,7 +10,7 @@ namespace QodanaTests
         public void ConfigureApplicationInsights_WithoutConnectionString_DoesNotThrow()
         {
             // Arrange
-            var expectedConnStr = "APPLICATIONINSIGHTS_CONNECTION_STRING";
+            const string expectedConnStr = "APPLICATIONINSIGHTS_CONNECTION_STRING";
             var originalValue = Environment.GetEnvironmentVariable(
                 expectedConnStr);
 
@@ -41,7 +41,7 @@ namespace QodanaTests
         public void ConfigureApplicationInsights_WithConnectionString_DoesNotThrow()
         {
             // Arrange
-            var expectedConnStr = "APPLICATIONINSIGHTS_CONNECTION_STRING";
+            const string expectedConnStr = "APPLICATIONINSIGHTS_CONNECTION_STRING";
             var originalValue = Environment.GetEnvironmentVariable(
                 expectedConnStr);
 
