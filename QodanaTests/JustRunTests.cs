@@ -5,204 +5,203 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using QodanaExample;
 
-namespace QodanaTests
+namespace QodanaTests;
+
+[ExcludeFromCodeCoverage]
+public class JustRunTests
 {
-    [ExcludeFromCodeCoverage]
-    public class JustRunTests
+    private readonly Mock<ILogger<JustRun>> _loggerMock;
+    private readonly JustRun _sut;
+
+    public JustRunTests()
     {
-        private readonly Mock<ILogger<JustRun>> _loggerMock;
-        private readonly JustRun _sut;
+        _loggerMock = new Mock<ILogger<JustRun>>();
+        _sut = new JustRun(_loggerMock.Object);
+    }
 
-        public JustRunTests()
+    private static HttpRequest CreateRequest(string queryString = "")
+    {
+        var context = new DefaultHttpContext();
+
+        if (!string.IsNullOrEmpty(queryString))
         {
-            _loggerMock = new Mock<ILogger<JustRun>>();
-            _sut = new JustRun(_loggerMock.Object);
+            context.Request.QueryString = new QueryString(queryString);
         }
 
-        private static HttpRequest CreateRequest(string queryString = "")
-        {
-            var context = new DefaultHttpContext();
+        return context.Request;
+    }
 
-            if (!string.IsNullOrEmpty(queryString))
-            {
-                context.Request.QueryString = new QueryString(queryString);
-            }
+    [Fact]
+    public void Initialize_That_Class()
+    {
+        Assert.NotNull(_sut);
+    }
 
-            return context.Request;
-        }
+    [Fact]
+    public void Run_ReturnsPassword()
+    {
+        // Arrange
+        const string expectedPhrase = "{\"pass\":\"SuperSecret123\"}";
+        var request = CreateRequest();
 
-        [Fact]
-        public void Initialize_That_Class()
-        {
-            Assert.NotNull(_sut);
-        }
+        // Act
+        var result = _sut.Run(request);
 
-        [Fact]
-        public void Run_ReturnsPassword()
-        {
-            // Arrange
-            const string expectedPhrase = "{\"pass\":\"SuperSecret123\"}";
-            var request = CreateRequest();
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
 
-            // Act
-            var result = _sut.Run(request);
+        Assert.Equal(
+            expectedPhrase,
+            okResult.Value);
+    }
 
-            // Assert
-            var okResult = Assert.IsType<OkObjectResult>(result);
+    [Fact]
+    public void Run_WithDebugTrue_LogsInformation()
+    {
+        // Arrange
+        const string expectedPhrase = "[INIT] Call to JustRun.";
+        var request = CreateRequest("?debug=true");
 
-            Assert.Equal(
-                expectedPhrase,
-                okResult.Value);
-        }
+        // Act
+        var result = _sut.Run(request);
 
-        [Fact]
-        public void Run_WithDebugTrue_LogsInformation()
-        {
-            // Arrange
-            const string expectedPhrase = "[INIT] Call to JustRun.";
-            var request = CreateRequest("?debug=true");
+        // Assert
+        Assert.IsType<OkObjectResult>(result);
 
-            // Act
-            var result = _sut.Run(request);
+        VerifyLog(
+            LogLevel.Information,
+            expectedPhrase);
+    }
 
-            // Assert
-            Assert.IsType<OkObjectResult>(result);
+    [Fact]
+    public void Run_WithDebugFalse_DoesNotLogInformation()
+    {
+        // Arrange
+        var request = CreateRequest("?debug=false");
 
-            VerifyLog(
+        // Act
+        _sut.Run(request);
+
+        // Assert
+        _loggerMock.Verify(
+            x => x.Log(
                 LogLevel.Information,
-                expectedPhrase);
-        }
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((_, _) => true),
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Never);
+    }
 
-        [Fact]
-        public void Run_WithDebugFalse_DoesNotLogInformation()
+    [Fact]
+    public void CurrentTime_ReturnsCurrentUtcTime()
+    {
+        // Arrange
+        var request = CreateRequest();
+
+        var before = DateTimeOffset.UtcNow;
+
+        // Act
+        var result = _sut.CurrentTime(request);
+
+        var after = DateTimeOffset.UtcNow;
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var returnedTime = Assert.IsType<DateTimeOffset>(okResult.Value);
+
+        Assert.InRange(returnedTime, before, after);
+    }
+
+    [Fact]
+    public void CurrentTime_WithDebugTrue_LogsInformation()
+    {
+        // Arrange
+        const string expectedPhrase = "[INIT] Call to CurrentTime.";
+        var request = CreateRequest("?debug=true");
+
+        // Act
+        _sut.CurrentTime(request);
+
+        // Assert
+        VerifyLog(
+            LogLevel.Information,
+            expectedPhrase);
+    }
+
+    [Fact]
+    public void ReadFile_ReturnsFileContent()
+    {
+        // Arrange
+        var path = Path.GetTempFileName();
+        const string expectedContent = "Hello from xUnit!";
+
+        try
         {
-            // Arrange
-            var request = CreateRequest("?debug=false");
-
-            // Act
-            _sut.Run(request);
-
-            // Assert
-            _loggerMock.Verify(
-                x => x.Log(
-                    LogLevel.Information,
-                    It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((_, _) => true),
-                    It.IsAny<Exception?>(),
-                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-                Times.Never);
-        }
-
-        [Fact]
-        public void CurrentTime_ReturnsCurrentUtcTime()
-        {
-            // Arrange
-            var request = CreateRequest();
-
-            var before = DateTimeOffset.UtcNow;
-
-            // Act
-            var result = _sut.CurrentTime(request);
-
-            var after = DateTimeOffset.UtcNow;
-
-            // Assert
-            var okResult = Assert.IsType<OkObjectResult>(result);
-            var returnedTime = Assert.IsType<DateTimeOffset>(okResult.Value);
-
-            Assert.InRange(returnedTime, before, after);
-        }
-
-        [Fact]
-        public void CurrentTime_WithDebugTrue_LogsInformation()
-        {
-            // Arrange
-            const string expectedPhrase = "[INIT] Call to CurrentTime.";
-            var request = CreateRequest("?debug=true");
-
-            // Act
-            _sut.CurrentTime(request);
-
-            // Assert
-            VerifyLog(
-                LogLevel.Information,
-                expectedPhrase);
-        }
-
-        [Fact]
-        public void ReadFile_ReturnsFileContent()
-        {
-            // Arrange
-            var path = Path.GetTempFileName();
-            const string expectedContent = "Hello from xUnit!";
-
-            try
-            {
-                File.WriteAllText(path, expectedContent);
-
-                var request = CreateRequest(
-                    $"?file={Uri.EscapeDataString(path)}");
-
-                // Act
-                var result = _sut.ReadFile(request);
-
-                // Assert
-                var okResult = Assert.IsType<OkObjectResult>(result);
-
-                Assert.Equal(expectedContent, okResult.Value);
-            }
-            finally
-            {
-                File.Delete(path);
-            }
-        }
-
-        [Fact]
-        public void ReadFile_WhenFileDoesNotExist_ThrowsFileNotFoundException()
-        {
-            // Arrange
-            var path = Path.Combine(
-                Path.GetTempPath(),
-                $"{Guid.NewGuid()}.txt");
+            File.WriteAllText(path, expectedContent);
 
             var request = CreateRequest(
                 $"?file={Uri.EscapeDataString(path)}");
 
-            // Act + Assert
-            Assert.Throws<FileNotFoundException>(() => _sut.ReadFile(request));
-        }
-
-        [Fact]
-        public void WeakEncryption_ReturnsExpectedMd5Hash()
-        {
-            // Arrange
-            const string expectedPhrase = "EC25161FA0D047E8510496A34E46DF01";
-            var request = CreateRequest();
-
             // Act
-            var result = _sut.WeakEncryption(request);
+            var result = _sut.ReadFile(request);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            var hash = Assert.IsType<string>(okResult.Value);
 
-            Assert.NotEmpty(hash);
-            Assert.Equal(expectedPhrase.Length, hash.Length);
+            Assert.Equal(expectedContent, okResult.Value);
         }
-
-        private void VerifyLog(
-            LogLevel level,
-            string expectedMessage)
+        finally
         {
-            _loggerMock.Verify(
-                x => x.Log(
-                    level,
-                    It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((value, _) =>
-                        value!.ToString() == expectedMessage),
-                    It.IsAny<Exception?>(),
-                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-                Times.Once);
+            File.Delete(path);
         }
+    }
+
+    [Fact]
+    public void ReadFile_WhenFileDoesNotExist_ThrowsFileNotFoundException()
+    {
+        // Arrange
+        var path = Path.Combine(
+            Path.GetTempPath(),
+            $"{Guid.NewGuid()}.txt");
+
+        var request = CreateRequest(
+            $"?file={Uri.EscapeDataString(path)}");
+
+        // Act + Assert
+        Assert.Throws<FileNotFoundException>(() => _sut.ReadFile(request));
+    }
+
+    [Fact]
+    public void WeakEncryption_ReturnsExpectedMd5Hash()
+    {
+        // Arrange
+        const string expectedPhrase = "EC25161FA0D047E8510496A34E46DF01";
+        var request = CreateRequest();
+
+        // Act
+        var result = _sut.WeakEncryption(request);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var hash = Assert.IsType<string>(okResult.Value);
+
+        Assert.NotEmpty(hash);
+        Assert.Equal(expectedPhrase.Length, hash.Length);
+    }
+
+    private void VerifyLog(
+        LogLevel level,
+        string expectedMessage)
+    {
+        _loggerMock.Verify(
+            x => x.Log(
+                level,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((value, _) =>
+                    value!.ToString() == expectedMessage),
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
     }
 }

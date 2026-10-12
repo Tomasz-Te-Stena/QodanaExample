@@ -1,71 +1,70 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Microsoft.Azure.Functions.Worker.Builder;
 
-namespace QodanaTests
+namespace QodanaTests;
+
+[ExcludeFromCodeCoverage]
+public class ProgramTests
 {
-    [ExcludeFromCodeCoverage]
-    public class ProgramTests
+    [Fact]
+    public void ConfigureApplicationInsights_WithoutConnectionString_DoesNotThrow()
     {
-        [Fact]
-        public void ConfigureApplicationInsights_WithoutConnectionString_DoesNotThrow()
+        // Arrange
+        const string expectedConnStr = "APPLICATIONINSIGHTS_CONNECTION_STRING";
+        var originalValue = Environment.GetEnvironmentVariable(
+            expectedConnStr);
+
+        try
         {
-            // Arrange
-            const string expectedConnStr = "APPLICATIONINSIGHTS_CONNECTION_STRING";
-            var originalValue = Environment.GetEnvironmentVariable(
-                expectedConnStr);
+            Environment.SetEnvironmentVariable(
+                expectedConnStr,
+                null);
 
-            try
-            {
-                Environment.SetEnvironmentVariable(
-                    expectedConnStr,
-                    null);
+            var builder = FunctionsApplication.CreateBuilder([]);
 
-                var builder = FunctionsApplication.CreateBuilder([]);
+            // Act
+            var exception = Record.Exception(() =>
+                QodanaExample.Program.ConfigureApplicationInsights(builder));
 
-                // Act
-                var exception = Record.Exception(() =>
-                    Program.ConfigureApplicationInsights(builder));
-
-                // Assert
-                Assert.Null(exception);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable(
-                    expectedConnStr,
-                    originalValue);
-            }
+            // Assert
+            Assert.Null(exception);
         }
-
-        [Fact]
-        public void ConfigureApplicationInsights_WithConnectionString_DoesNotThrow()
+        finally
         {
-            // Arrange
-            const string expectedConnStr = "APPLICATIONINSIGHTS_CONNECTION_STRING";
-            var originalValue = Environment.GetEnvironmentVariable(
-                expectedConnStr);
+            Environment.SetEnvironmentVariable(
+                expectedConnStr,
+                originalValue);
+        }
+    }
 
-            try
-            {
-                Environment.SetEnvironmentVariable(
-                    expectedConnStr,
-                    "InstrumentationKey=00000000-0000-0000-0000-000000000000");
+    [Fact]
+    public void ConfigureApplicationInsights_WithConnectionString_DoesNotThrow()
+    {
+        // Arrange
+        const string expectedConnStr = "APPLICATIONINSIGHTS_CONNECTION_STRING";
+        var originalValue = Environment.GetEnvironmentVariable(
+            expectedConnStr);
 
-                var builder = FunctionsApplication.CreateBuilder([]);
+        try
+        {
+            Environment.SetEnvironmentVariable(
+                expectedConnStr,
+                "InstrumentationKey=00000000-0000-0000-0000-000000000000");
 
-                // Act
-                var exception = Record.Exception(() =>
-                    Program.ConfigureApplicationInsights(builder));
+            var builder = FunctionsApplication.CreateBuilder([]);
 
-                // Assert
-                Assert.Null(exception);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable(
-                    expectedConnStr,
-                    originalValue);
-            }
+            // Act
+            var exception = Record.Exception(() =>
+                QodanaExample.Program.ConfigureApplicationInsights(builder));
+
+            // Assert
+            Assert.Null(exception);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(
+                expectedConnStr,
+                originalValue);
         }
     }
 }
