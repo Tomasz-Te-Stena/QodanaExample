@@ -10,7 +10,7 @@ public class JustRun(ILogger<JustRun> logger)
 {
     private readonly ILogger<JustRun> _logger = logger;
 
-    private readonly string _password = "SuperSecret123";
+    private static readonly string _password = "SuperSecret123";
 
     [Function("JustRun")]
     public IActionResult Run([HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequest req)
