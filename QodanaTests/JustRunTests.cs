@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
 using QodanaExample;
-using System.Timers;
 
 namespace QodanaTests
 {
@@ -42,7 +41,7 @@ namespace QodanaTests
         public void Run_ReturnsPassword()
         {
             // Arrange
-            var expectedPhrase = "{\"pass\":\"SuperSecret123\"}";
+            const string expectedPhrase = "{\"pass\":\"SuperSecret123\"}";
             var request = CreateRequest();
 
             // Act
@@ -60,7 +59,7 @@ namespace QodanaTests
         public void Run_WithDebugTrue_LogsInformation()
         {
             // Arrange
-            var expectedPhrase = "[INIT] Call to JustRun.";
+            const string expectedPhrase = "[INIT] Call to JustRun.";
             var request = CreateRequest("?debug=true");
 
             // Act
@@ -118,7 +117,7 @@ namespace QodanaTests
         public void CurrentTime_WithDebugTrue_LogsInformation()
         {
             // Arrange
-            var expectedPhrase = "[INIT] Call to CurrentTime.";
+            const string expectedPhrase = "[INIT] Call to CurrentTime.";
             var request = CreateRequest("?debug=true");
 
             // Act
@@ -177,7 +176,7 @@ namespace QodanaTests
         public void WeakEncryption_ReturnsExpectedMd5Hash()
         {
             // Arrange
-            var expectedPhrase = "EC25161FA0D047E8510496A34E46DF01";
+            const string expectedPhrase = "EC25161FA0D047E8510496A34E46DF01";
             var request = CreateRequest();
 
             // Act
