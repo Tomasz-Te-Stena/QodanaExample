@@ -1,9 +1,11 @@
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Newtonsoft.Json.Linq;
 using QodanaExample;
+using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace QodanaTests;
 
@@ -188,6 +190,51 @@ public class JustRunTests
 
         Assert.NotEmpty(hash);
         Assert.Equal(expectedPhrase.Length, hash.Length);
+    }
+
+    [Fact]
+    public void WeakEncryption_WithDebugTrue_ReturnsOk()
+    {
+        // Arrange
+        var context = new DefaultHttpContext();
+        context.Request.QueryString = new QueryString("?debug=true");
+
+        // Act
+        var result = _sut.WeakEncryption(context.Request);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+
+        Assert.NotNull(okResult.Value);
+    }
+
+    [Fact]
+    public void InsecureDeserialization_ValidJson_ReturnsOkObjectResult()
+    {
+        // Arrange
+        var logger = new Mock<ILogger<JustRun>>();
+        var function = new JustRun(logger.Object);
+
+        var json = """
+                   {
+                       "name": "Qodana",
+                       "version": 1
+                   }
+                   """;
+
+        var context = new DefaultHttpContext();
+        context.Request.Body = new MemoryStream(
+            Encoding.UTF8.GetBytes(json));
+
+        // Act
+        var result = function.InsecureDeserialization(context.Request);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        var deserialized = Assert.IsType<JObject>(okResult.Value);
+
+        Assert.Equal("Qodana", deserialized["name"]?.Value<string>());
+        Assert.Equal(1, deserialized["version"]?.Value<int>());
     }
 
     private void VerifyLog(

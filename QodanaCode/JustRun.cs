@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 
 namespace QodanaExample;
@@ -77,5 +78,27 @@ public class JustRun(ILogger<JustRun> logger)
         var hash = md5.ComputeHash(input);
 
         return new OkObjectResult(Convert.ToHexString(hash));
+    }
+
+    public IActionResult InsecureDeserialization(
+        [HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequest req)
+    {
+        using var reader = new StreamReader(req.Body);
+        var json = reader.ReadToEnd();
+
+        // INTENTIONALLY VULNERABLE:
+        // TypeNameHandling.All allows type information supplied in JSON
+        // to influence object creation.
+        var settings = new Newtonsoft.Json.JsonSerializerSettings
+        {
+            TypeNameHandling = Newtonsoft.Json.TypeNameHandling.All
+        };
+
+        var result =
+            Newtonsoft.Json.JsonConvert.DeserializeObject<object>(
+                json,
+                settings);
+
+        return new OkObjectResult(result);
     }
 }
