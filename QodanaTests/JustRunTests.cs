@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using Moq;
 using Newtonsoft.Json.Linq;
 using QodanaExample;
-using System.Diagnostics.CodeAnalysis;
-using System.Text;
 
 namespace QodanaTests;
 
@@ -14,30 +14,6 @@ public class JustRunTests
 {
     private readonly Mock<ILogger<JustRun>> _loggerMock;
     private readonly JustRun _sut;
-
-    public JustRunTests()
-    {
-        _loggerMock = new Mock<ILogger<JustRun>>();
-        _sut = new JustRun(_loggerMock.Object);
-    }
-
-    private static HttpRequest CreateRequest(string queryString = "")
-    {
-        var context = new DefaultHttpContext();
-
-        if (!string.IsNullOrEmpty(queryString))
-        {
-            context.Request.QueryString = new QueryString(queryString);
-        }
-
-        return context.Request;
-    }
-
-    [Fact]
-    public void Initialize_That_Class()
-    {
-        Assert.NotNull(_sut);
-    }
 
     [Fact]
     public void Run_ReturnsPassword()
@@ -226,6 +202,9 @@ public class JustRunTests
         context.Request.Body = new MemoryStream(
             Encoding.UTF8.GetBytes(json));
 
+        string expectedName = "Qodana";
+        int expectedVersion = 1;
+
         // Act
         var result = function.InsecureDeserialization(context.Request);
 
@@ -233,10 +212,226 @@ public class JustRunTests
         var okResult = Assert.IsType<OkObjectResult>(result);
         var deserialized = Assert.IsType<JObject>(okResult.Value);
 
-        Assert.Equal("Qodana", deserialized["name"]?.Value<string>());
-        Assert.Equal(1, deserialized["version"]?.Value<int>());
+        Assert.Equal(expectedName, deserialized["name"]?.Value<string>());
+        Assert.Equal(expectedVersion, deserialized["version"]?.Value<int>());
     }
 
+    [Fact]
+    public void ProcessUser_ValidRequest_ProcessesUserAndReturnsResult()
+    {
+        // Arrange
+        var logger = new Mock<ILogger<JustRun>>();
+        var function = new JustRun(logger.Object);
+
+        string userName = "Jan.Kowalski";
+        string userEmail = "JanKow@mycorpo.com";
+        string userPass = "Secret123";
+
+        var json = $$"""
+                     {
+                         "Username": "{{userName}}",
+                         "Email": "{{userEmail}}",
+                         "Password": "{{userPass}}"
+                     }
+                     """;
+
+        var context = new DefaultHttpContext();
+
+        context.Request.Body = new MemoryStream(
+            Encoding.UTF8.GetBytes(json));
+
+        // Act
+        var result = function.ProcessUser(context.Request);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+
+        Assert.NotNull(okResult.Value);
+
+        // Convert the anonymous response object so its
+        // properties can easily be inspected.
+        var responseJson =
+            Newtonsoft.Json.JsonConvert.SerializeObject(okResult.Value);
+
+        var response =
+            Newtonsoft.Json.Linq.JObject.Parse(responseJson);
+
+        Assert.Equal(
+            userName,
+            response["Username"]?.Value<string>());
+
+        Assert.Equal(
+            userEmail,
+            response["Email"]?.Value<string>());
+
+        Assert.Equal(
+            $"SELECT * FROM Users WHERE Username = '{userName}'",
+            response["GeneratedQuery"]?.Value<string>());
+
+        // MD5 produces a 128-bit hash = 16 bytes = 32 hex characters.
+        var passwordHash =
+            response["PasswordHash"]?.Value<string>();
+
+        Assert.NotNull(passwordHash);
+        Assert.Equal(32, passwordHash.Length);
+
+        Assert.NotNull(response["ProcessedAt"]);
+    }
+
+    [Fact]
+    public void ProcessUser_NullJson_ReturnsInvalidUserBadRequest()
+    {
+        // Arrange
+        var logger = new Mock<ILogger<JustRun>>();
+        var function = new JustRun(logger.Object);
+
+        string json = "null";
+        string expectedValue = "Invalid user data.";
+
+        var context = new DefaultHttpContext();
+        context.Request.Body = new MemoryStream(
+            Encoding.UTF8.GetBytes(json));
+
+        // Act
+        var result = function.ProcessUser(context.Request);
+
+        // Assert
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+
+        Assert.Equal(expectedValue, badRequest.Value);
+    }
+
+    [Fact]
+    public void ProcessUser_WhitespaceUsername_ReturnsUsernameRequiredBadRequest()
+    {
+        // Arrange
+        var logger = new Mock<ILogger<JustRun>>();
+        var function = new JustRun(logger.Object);
+
+        var json = """
+                   {
+                       "Username": "   ",
+                       "Email": "JanKow@example.com",
+                       "Password": "Secret123"
+                   }
+                   """;
+        string expectedValue = "Username is required.";
+
+        var context = new DefaultHttpContext();
+        context.Request.Body = new MemoryStream(
+            Encoding.UTF8.GetBytes(json));
+
+        // Act
+        var result = function.ProcessUser(context.Request);
+
+        // Assert
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+
+        Assert.Equal(expectedValue, badRequest.Value);
+    }
+
+    [Fact]
+    public void ProcessUser_WithPassword_ReturnsMd5PasswordHash()
+    {
+        // Arrange
+        var logger = new Mock<ILogger<JustRun>>();
+        var function = new JustRun(logger.Object);
+
+        var json = """
+                   {
+                       "Username": "Jan.Kowalski",
+                       "Email": "JanKow@example.com",
+                       "Password": "Secret123"
+                   }
+                   """;
+
+        var context = new DefaultHttpContext();
+        context.Request.Body = new MemoryStream(
+            Encoding.UTF8.GetBytes(json));
+
+        // Act
+        var result = function.ProcessUser(context.Request);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+
+        var responseJson =
+            Newtonsoft.Json.JsonConvert.SerializeObject(okResult.Value);
+
+        var response =
+            Newtonsoft.Json.Linq.JObject.Parse(responseJson);
+
+        var passwordHash = response["PasswordHash"]?.Value<string>();
+
+        Assert.NotNull(passwordHash);
+        Assert.Equal(32, passwordHash.Length);
+    }
+
+    [Fact]
+    public void ProcessUser_WithoutPassword_UsesEmptyStringForHash()
+    {
+        // Arrange
+        var logger = new Mock<ILogger<JustRun>>();
+        var function = new JustRun(logger.Object);
+
+        var json = """
+                   {
+                       "Username": "Jan.Kowalski",
+                       "Email": "JanKow@example.com"
+                   }
+                   """;
+        string expectedHash = "D41D8CD98F00B204E9800998ECF8427E";
+
+        var context = new DefaultHttpContext();
+        context.Request.Body = new MemoryStream(
+            Encoding.UTF8.GetBytes(json));
+
+        // Act
+        var result = function.ProcessUser(context.Request);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result);
+
+        var responseJson =
+            Newtonsoft.Json.JsonConvert.SerializeObject(okResult.Value);
+
+        var response =
+            Newtonsoft.Json.Linq.JObject.Parse(responseJson);
+
+        var passwordHash = response["PasswordHash"]?.Value<string>();
+
+        Assert.NotNull(passwordHash);
+
+        // MD5 hash of an empty string:
+        Assert.Equal(
+            expectedHash,
+            passwordHash);
+    }
+
+    // Helpers
+    public JustRunTests()
+    {
+        _loggerMock = new Mock<ILogger<JustRun>>();
+        _sut = new JustRun(_loggerMock.Object);
+    }
+
+    private static HttpRequest CreateRequest(string queryString = "")
+    {
+        var context = new DefaultHttpContext();
+
+        if (!string.IsNullOrEmpty(queryString))
+        {
+            context.Request.QueryString = new QueryString(queryString);
+        }
+
+        return context.Request;
+    }
+
+    [Fact]
+    public void Initialize_That_Class()
+    {
+        Assert.NotNull(_sut);
+    }
     private void VerifyLog(
         LogLevel level,
         string expectedMessage)

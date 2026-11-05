@@ -101,4 +101,67 @@ public class JustRun(ILogger<JustRun> logger)
 
         return new OkObjectResult(result);
     }
+
+    [Function("ProcessUser")]
+    public IActionResult ProcessUser(
+        [HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequest req)
+    {
+        using var reader = new StreamReader(req.Body);
+        var json = reader.ReadToEnd();
+
+        // INTENTIONALLY INSECURE:
+        // TypeNameHandling.All can allow attacker-controlled type information.
+        var settings = new Newtonsoft.Json.JsonSerializerSettings
+        {
+            TypeNameHandling = Newtonsoft.Json.TypeNameHandling.All
+        };
+
+        var user = Newtonsoft.Json.JsonConvert
+            .DeserializeObject<UserRequest>(json, settings);
+
+        if (user == null)
+        {
+            return new BadRequestObjectResult("Invalid user data.");
+        }
+
+        if (string.IsNullOrWhiteSpace(user.Username))
+        {
+            return new BadRequestObjectResult("Username is required.");
+        }
+
+        // INTENTIONALLY INSECURE:
+        // User-controlled value concatenated directly into SQL.
+        var sql =
+            $"SELECT * FROM Users WHERE Username = '{user.Username}'";
+
+        // INTENTIONALLY INSECURE:
+        // MD5 is not suitable for password hashing.
+        using var md5 = System.Security.Cryptography.MD5.Create();
+
+        var passwordBytes =
+            System.Text.Encoding.UTF8.GetBytes(user.Password ?? string.Empty);
+
+        var hash = md5.ComputeHash(passwordBytes);
+        var passwordHash = Convert.ToHexString(hash);
+
+        var response = new
+        {
+            user.Username,
+            user.Email,
+            PasswordHash = passwordHash,
+            GeneratedQuery = sql,
+            ProcessedAt = DateTimeOffset.UtcNow
+        };
+
+        return new OkObjectResult(response);
+    }
+
+    public class UserRequest
+    {
+        public string? Username { get; set; }
+
+        public string? Email { get; set; }
+
+        public string? Password { get; set; }
+    }
 }
