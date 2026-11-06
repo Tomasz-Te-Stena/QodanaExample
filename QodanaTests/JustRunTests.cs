@@ -408,6 +408,26 @@ public class JustRunTests
             passwordHash);
     }
 
+    [Fact]
+    public void Initialize_That_Class()
+    {
+        Assert.NotNull(_sut);
+    }
+
+    [Fact]
+    public void CreateUnsafeHttpClient_ShouldReturnHttpClient()
+    {
+        // Arrange
+        var logger = new Mock<ILogger<JustRun>>();
+        var function = new JustRun(logger.Object);
+
+        // Act
+        using var client = function.CreateUnsafeHttpClient();
+
+        // Assert
+        Assert.NotNull(client);
+    }
+
     // Helpers
     public JustRunTests()
     {
@@ -427,11 +447,6 @@ public class JustRunTests
         return context.Request;
     }
 
-    [Fact]
-    public void Initialize_That_Class()
-    {
-        Assert.NotNull(_sut);
-    }
     private void VerifyLog(
         LogLevel level,
         string expectedMessage)

@@ -1,0 +1,14 @@
+rules:
+  - id: SEC001-disable-certificate-validation
+    languages:
+      - csharp
+
+    message: >
+      TLS certificate validation must not be disabled.
+      This can allow man-in-the-middle attacks.
+    severity: ERROR
+
+    patterns:
+      - pattern: |
+          $OBJ.ServerCertificateCustomValidationCallback =
+              HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
