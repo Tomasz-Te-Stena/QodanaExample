@@ -237,6 +237,20 @@ public class JustRunTests
         Assert.Equal(1, deserialized["version"]?.Value<int>());
     }
 
+    [Fact]
+    public void CreateUnsafeHttpClient_ShouldReturnHttpClient()
+    {
+        // Arrange
+        var logger = new Mock<ILogger<JustRun>>();
+        var function = new JustRun(logger.Object);
+
+        // Act
+        using var client = function.CreateUnsafeHttpClient();
+
+        // Assert
+        Assert.NotNull(client);
+    }
+
     private void VerifyLog(
         LogLevel level,
         string expectedMessage)

@@ -101,4 +101,14 @@ public class JustRun(ILogger<JustRun> logger)
 
         return new OkObjectResult(result);
     }
+
+    public HttpClient CreateUnsafeHttpClient()
+    {
+        var handler = new HttpClientHandler();
+
+        handler.ServerCertificateCustomValidationCallback =
+            HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+
+        return new HttpClient(handler);
+    }
 }
